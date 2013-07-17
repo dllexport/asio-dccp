@@ -21,9 +21,11 @@ int main(int argc, char* argv[])
 
     dccp::resolver resolver(io_service);
     dccp::resolver::query query(argv[1], "55555");
+    dccp::endpoint ep = *resolver.resolve(query);
 
     dccp::socket socket(io_service);
-    socket.connect(dccp::endpoint(dccp::v4(), 55555));
+//    socket.connect(dccp::endpoint(dccp::v4(), 55555));
+    socket.connect(ep);
 
     for (;;)
     {
