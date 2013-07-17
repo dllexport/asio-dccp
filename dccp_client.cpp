@@ -7,6 +7,11 @@
 
 using boost::asio::ip::dccp;
 
+/**
+ * DCCP test client:
+ * This program connects to the specified host on dccp port 55555 
+ * and reads data until there is no more data to be read and then exits.
+ */
 int main(int argc, char* argv[])
 {
   try
@@ -34,13 +39,21 @@ int main(int argc, char* argv[])
 
       size_t len = socket.read_some(boost::asio::buffer(buf), error);
 
+      // TODO: need to determine why eof is not generated when the server closes the connection 
       if (error == boost::asio::error::eof)
         break; // Connection closed cleanly by peer.
       else if (error)
         throw boost::system::system_error(error); // Some other error.
 
+      // HACK until connection issue is resolved.
+      if (len == 0) 
+      {
+        socket.close();
+        break;
+      }
+
       std::cout.write(buf.data(), len);
-   }
+    }
   }
   catch (std::exception& e)
   {

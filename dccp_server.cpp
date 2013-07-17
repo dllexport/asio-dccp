@@ -9,7 +9,16 @@
 
 #include "dccp.hpp"
 
+/**
+ * DCCP test server:
+ * This program listens for incoming DCCP connections on port 55555.
+ * It then writes the daytime string to the client 10 times before
+ * closing the connection.
+ *
+ * TODO: for some reason closing the connection does not trigger an eof at the client.
+ */
 using boost::asio::ip::dccp;
+using namespace std;
 
 std::string make_daytime_string()
 {
@@ -39,7 +48,21 @@ public:
     // get remote endpoint
     std::string sEndpoint = socket_.remote_endpoint().address().to_string();
     unsigned short uiClientPort = socket_.remote_endpoint().port();
-    dccp::endpoint remote_endpoint = socket_.remote_endpoint();
+    
+    cout << "Incoming connection from " << sEndpoint << ":" << uiClientPort << endl;
+
+    write_day_time();
+  }
+
+private:
+  dccp_connection(boost::asio::io_service& io_service)
+    : socket_(io_service),
+    count_(0)
+  {
+  }
+
+  void write_day_time()
+  {
     message_ = make_daytime_string();
 #if 1
     boost::asio::async_write(socket_, boost::asio::buffer(message_),
@@ -60,25 +83,27 @@ public:
             boost::asio::placeholders::error,
             boost::asio::placeholders::bytes_transferred));
 #endif
-  }
 
-private:
-  dccp_connection(boost::asio::io_service& io_service)
-    : socket_(io_service)
-  {
   }
 
   void handle_write(const boost::system::error_code& /*error*/,
       size_t /*bytes_transferred*/)
   {
-    static int i =0;
-    if (i < 10)
-      start();
-    ++i;
+    if (count_ < 10)
+    {
+      write_day_time();
+    }
+    else
+    {
+      cout << "Closing connection" << endl;
+      socket_.close();
+    }
+    ++count_;
   }
 
   dccp::socket socket_;
   std::string message_;
+  int count_;
 };
 
 class dccp_server
